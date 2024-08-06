@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        form, .search-container {
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .form-row > div {
+            flex: 1;
+            min-width: 200px;
+            margin-right: 10px;
+        }
+        .form-row > div:last-child {
+            margin-right: 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .edit-button, .delete-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        .delete-button {
+            background-color: #dc3545;
+        }
+        .edit-button:hover, .delete-button:hover {
+            opacity: 0.8;
+        }
+        .search-container input {
+            width: auto;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .file-link {
+            display: inline-block;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .file-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Data Management</h1>
+
+<div class="search-container">
+    <label for="search">Search:</label>
+    <input type="text" id="search" placeholder="Search records...">
+</div>
+
+<form id="dataForm">
+    <div class="form-row">
+        <div>
+            <label for="type">Type of Submission:</label>
+            <input type="text" id="type" name="type" required>
+        </div>
+        <div>
+            <label for="ref">Ref:</label>
+            <input type="text" id="ref" name="ref" required>
+        </div>
+        <div>
+            <label for="description">Description:</label>
+            <input type="text" id="description" name="description" required>
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <div>
+            <label for="revision">Revision:</label>
+            <input type="text" id="revision" name="revision" required>
+        </div>
+        <div>
+            <label for="status">Status:</label>
+            <select id="status" name="status" required>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+            </select>
+        </div>
+        <div>
+            <label for="receiptDate">Receipt Date:</label>
+            <input type="date" id="receiptDate" name="receiptDate" required>
+        </div>
+        <div>
+            <label for="documentDate">Document Date:</label>
+            <input type="date" id="documentDate" name="documentDate" required>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div>
+            <label for="fileUpload">Upload File:</label>
+            <input type="file" id="fileUpload" name="fileUpload">
+        </div>
+    </div>
+    
+    <button type="submit">Add Record</button>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>Type of Submission</th>
+            <th>Ref</th>
+            <th>Description</th>
+            <th>Revision</th>
+            <th>Status</th>
+            <th>Receipt Date</th>
+            <th>Document Date</th>
+            <th>File</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="dataTable">
+        <!-- Records will be inserted here -->
+    </tbody>
+</table>
+
+<script>
+    const dataTable = document.getElementById('dataTable');
+    let editIndex = -1;
+
+    document.getElementById('dataForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        const type = formData.get('type');
+        const ref = formData.get('ref');
+        const description = formData.get('description');
+        const revision = formData.get('revision');
+        const status = formData.get('status');
+        const receiptDate = formData.get('receiptDate');
+        const documentDate = formData.get('documentDate');
+        const file = formData.get('fileUpload');
+        const fileName = file ? file.name : 'No file';
+        const fileUrl = file ? URL.createObjectURL(file) : '#';
+
+        if (editIndex > -1) {
+            const row = dataTable.rows[editIndex];
+            row.cells[0].textContent = type;
+            row.cells[1].textContent = ref;
+            row.cells[2].textContent = description;
+            row.cells[3].textContent = revision;
+            row.cells[4].textContent = status;
+            row.cells[5].textContent = receiptDate;
+            row.cells[6].textContent = documentDate;
+            row.cells[7].innerHTML = file ? `<a class="file-link" href="${fileUrl}" download="${fileName}">${fileName}</a>` : 'No file';
+            saveData();
+            editIndex = -1;
+        } else {
+            const row = dataTable.insertRow();
+            row.insertCell(0).textContent = type;
+            row.insertCell(1).textContent = ref;
+            row.insertCell(2).textContent = description;
+            row.insertCell(3).textContent = revision;
+            row.insertCell(4).textContent = status;
+            row.insertCell(5).textContent = receiptDate;
+            row.insertCell(6).textContent = documentDate;
+            row.insertCell(7).innerHTML = file ? `<a class="file-link" href="${fileUrl}" download="${fileName}">${fileName}</a>` : 'No file';
+            const actionsCell = row.insertCell(8);
+            actionsCell.innerHTML = `
+                <button class="edit-button" onclick="editRecord(this)">Edit</button>
+                <button class="delete-button" onclick="deleteRecord(this)">Delete</button>
+            `;
+            saveData();
+        }
+        document.getElementById('dataForm').reset();
+    });
+
+    function editRecord(button) {
+        const row = button.parentNode.parentNode;
+        document.getElementById('type').value = row.cells[0].textContent;
+        document.getElementById('ref').value = row.cells[1].textContent;
+        document.getElementById('description').value = row.cells[2].textContent;
+        document.getElementById('revision').value = row.cells[3].textContent;
+        document.getElementById('status').value = row.cells[4].textContent;
+        document.getElementById('receiptDate').value = row.cells[5].textContent;
+        document.getElementById('documentDate').value = row.cells[6].textContent;
+        editIndex = row.rowIndex - 1;
+    }
+
+    function deleteRecord(button) {
+        if (confirm('Are you sure you want to delete this record?')) {
+            const row = button.parentNode.parentNode;
+            dataTable.deleteRow(row.rowIndex - 1);
+            saveData();
+        }
+    }
+
+    document.getElementById('search').addEventListener('input', function() {
+        const searchText = this.value.toLowerCase();
+        const rows = dataTable.getElementsByTagName('tr');
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            let found = false;
+            for (let j = 0; j < cells.length; j++) {
+                if (cells[j].textContent.toLowerCase().includes(searchText)) {
+                    found = true;
+                    break;
+                }
+            }
+            rows[i].style.display = found ? '' : 'none';
+        }
+    });
+
+    function saveData() {
+        const records = [];
+        const rows = dataTable.getElementsByTagName('tr');
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            const record = {
+                type: cells[0].textContent,
+                ref: cells[1].textContent,
+                description: cells[2].textContent,
+                revision: cells[3].textContent,
+                status: cells[4].textContent,
+                receiptDate: cells[5].textContent,
+                documentDate: cells[6].textContent,
+                fileUrl: cells[7].querySelector('a') ? cells[7].querySelector('a').href : '#',
+                fileName: cells[7].querySelector('a') ? cells[7].querySelector('a').textContent : 'No file'
+            };
+            records.push(record);
+        }
+        localStorage.setItem('records', JSON.stringify(records));
+    }
+
+    function loadData() {
+        const records = JSON.parse(localStorage.getItem('records')) || [];
+        records.forEach(record => {
+            const row = dataTable.insertRow();
+            row.insertCell(0).textContent = record.type;
+            row.insertCell(1).textContent = record.ref;
+            row.insertCell(2).textContent = record.description;
+            row.insertCell(3).textContent = record.revision;
+            row.insertCell(4).textContent = record.status;
+            row.insertCell(5).textContent = record.receiptDate;
+            row.insertCell(6).textContent = record.documentDate;
+            row.insertCell(7).innerHTML = record.fileUrl !== '#' ? `<a class="file-link" href="${record.fileUrl}" download="${record.fileName}">${record.fileName}</a>` : 'No file';
+            const actionsCell = row.insertCell(8);
+            actionsCell.innerHTML = `
+                <button class="edit-button" onclick="editRecord(this)">Edit</button>
+                <button class="delete-button" onclick="deleteRecord(this)">Delete</button>
+            `;
+        });
+    }
+
+    // Load data when the page loads
+    window.addEventListener('load', loadData);
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management</title>
+    <style>
+        /* Your styles here */
+    </style>
+</head>
+<body>
+
+<h1>Data Management</h1>
+
+<!-- Your form and table here -->
+
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+<script>
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const dataTable = document.getElementById('dataTable');
+    let editIndex = -1;
+
+    document.getElementById('dataForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        const type = formData.get('type');
+        const ref = formData.get('ref');
+        const description = formData.get('description');
+        const revision = formData.get('revision');
+        const status = formData.get('status');
+        const receiptDate = formData.get('receiptDate');
+        const documentDate = formData.get('documentDate');
+
+        if (editIndex > -1) {
+            const row = dataTable.rows[editIndex];
+            row.cells[0].textContent = type;
+            row.cells[1].textContent = ref;
+            row.cells[2].textContent = description;
+            row.cells[3].textContent = revision;
+            row.cells[4].textContent = status;
+            row.cells[5].textContent = receiptDate;
+            row.cells[6].textContent = documentDate;
+            editIndex = -1;
+
+            // Update record in Firestore
+            const id = row.dataset.id;
+            db.collection('records').doc(id).update({
+                type, ref, description, revision, status, receiptDate, documentDate
+            });
+        } else {
+            // Add new record to Firestore
+            db.collection('records').add({
+                type, ref, description, revision, status, receiptDate, documentDate
+            }).then(docRef => {
+                const row = dataTable.insertRow();
+                row.dataset.id = docRef.id;
+                row.insertCell(0).textContent = type;
+                row.insertCell(1).textContent = ref;
+                row.insertCell(2).textContent = description;
+                row.insertCell(3).textContent = revision;
+                row.insertCell(4).textContent = status;
+                row.insertCell(5).textContent = receiptDate;
+                row.insertCell(6).textContent = documentDate;
+                const actionsCell = row.insertCell(7);
+                actionsCell.innerHTML = `
+                    <button class="edit-button" onclick="editRecord(this)">Edit</button>
+                    <button class="delete-button" onclick="deleteRecord(this)">Delete</button>
+                `;
+            });
+        }
+        document.getElementById('dataForm').reset();
+    });
+
+    function editRecord(button) {
+        const row = button.parentNode.parentNode;
+        document.getElementById('type').value = row.cells[0].textContent;
+        document.getElementById('ref').value = row.cells[1].textContent;
+        document.getElementById('description').value = row.cells[2].textContent;
+        document.getElementById('revision').value = row.cells[3].textContent;
+        document.getElementById('status').value = row.cells[4].textContent;
+        document.getElementById('receiptDate').value = row.cells[5].textContent;
+        document.getElementById('documentDate').value = row.cells[6].textContent;
+        editIndex = row.rowIndex - 1;
+    }
+
+    function deleteRecord(button) {
+        if (confirm('Are you sure you want to delete this record?')) {
+            const row = button.parentNode.parentNode;
+            const id = row.dataset.id;
+            dataTable.deleteRow(row.rowIndex - 1);
+
+            // Delete record from Firestore
+            db.collection('records').doc(id).delete();
+        }
+    }
+
+    function loadData() {
+        db.collection('records').get().then(querySnapshot => {
+            querySnapshot.forEach(doc => {
+                const record = doc.data();
+                const row = dataTable.insertRow();
+                row.dataset.id = doc.id;
+                row.insertCell(0).textContent = record.type;
+                row.insertCell(1).textContent = record.ref;
+                row.insertCell(2).textContent = record.description;
+                row.insertCell(3).textContent = record.revision;
+                row.insertCell(4).textContent = record.status;
+                row.insertCell(5).textContent = record.receiptDate;
+                row.insertCell(6).textContent = record.documentDate;
+                const actionsCell = row.insertCell(7);
+                actionsCell.innerHTML = `
+                    <button class="edit-button" onclick="editRecord(this)">Edit</button>
+                    <button class="delete-button" onclick="deleteRecord(this)">Delete</button>
+                `;
+            });
+        });
+    }
+
+    // Load data when the page loads
+    window.addEventListener('load', loadData);
+</script>
+
+</body>
+</html>
